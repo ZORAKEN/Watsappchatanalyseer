@@ -11,10 +11,58 @@ st.set_page_config(
     page_icon="💬",
     layout="wide"
 )
+st.markdown("""
+<style>
+.main {
+    background-color: #f8fafc;
+}
 
-st.title("💬 WhatsApp Chat Analyzer")
+[data-testid="stMetric"] {
+    background-color: white;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0px 2px 10px rgba(0,0,0,0.08);
+}
 
-st.sidebar.header("Upload Chat")
+h1,h2,h3 {
+    color:#075E54;
+}
+
+.block-container {
+    padding-top:2rem;
+    padding-bottom:2rem;
+}
+
+div.stButton > button:first-child{
+    background:#25D366;
+    color:white;
+    border:none;
+    border-radius:10px;
+    font-weight:bold;
+}
+
+div.stButton > button:first-child:hover{
+    background:#128C7E;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<h1 style='text-align:center;color:#25D366;'>
+💬 WhatsApp Chat Analyzer
+</h1>
+
+<p style='text-align:center;color:gray;font-size:18px'>
+Visualize chats, emojis, links, media and user activity
+</p>
+""", unsafe_allow_html=True)
+
+st.sidebar.markdown("# 📱 WhatsApp Analyzer")
+st.sidebar.markdown("---")
+
+st.sidebar.info(
+    "Upload an exported WhatsApp chat to generate analytics."
+)
 
 uploaded_file = st.sidebar.file_uploader(
     "Choose exported WhatsApp chat (.txt)",
@@ -56,69 +104,90 @@ if st.sidebar.button("Show Analysis", use_container_width=True):
 
     st.header("Top Statistics")
 
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3 = st.columns(3)
 
-    c1.metric("Messages", num_messages)
-    c2.metric("Words", words)
-    c3.metric("Media", media)
-    c4.metric("Links", links)
+    c1.metric("💬 Messages", f"{num_messages:,}")
+    c2.metric("📝 Words", f"{words:,}")
+    c3.metric("🔗 Links", f"{links:,}")
 
     # ---------------- Monthly Timeline ----------------
-    st.header("Monthly Timeline")
+    st.divider()
+    st.subheader("📈 Chat Timeline")
 
-    timeline = txtprocessor.monthly_timeline(selected_user, df)
+    col1, col2 = st.columns(2)
 
-    fig, ax = plt.subplots(figsize=(10, 4))
-    ax.plot(
-        timeline["time"],
-        timeline["message"],
-        marker="o"
-    )
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    st.pyplot(fig)
+    with col1:
+        st.markdown("#### Monthly Timeline")
+        timeline = txtprocessor.monthly_timeline(selected_user, df)
 
-    # ---------------- Daily Timeline ----------------
-    st.header("Daily Timeline")
+        fig, ax = plt.subplots(figsize=(6,3.5))
+        ax.plot(
+            timeline["time"],
+            timeline["message"],
+            marker="o",
+            linewidth=2,
+            color="#25D366"
+        )
+        ax.grid(alpha=0.3)
+        plt.xticks(rotation=30)
+        plt.tight_layout()
+        st.pyplot(fig, use_container_width=True)
 
-    daily = txtprocessor.daily_timeline(selected_user, df)
+    with col2:
+        st.markdown("#### Daily Timeline")
 
-    fig, ax = plt.subplots(figsize=(10, 4))
-    ax.plot(daily["only_date"], daily["message"])
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-    st.pyplot(fig)
+        daily = txtprocessor.daily_timeline(selected_user, df)
 
-    # ---------------- Activity ----------------
-    st.header("Activity Map")
+        fig, ax = plt.subplots(figsize=(6,3.5))
+        ax.plot(
+            daily["only_date"],
+            daily["message"],
+            linewidth=2,
+            color="#128C7E"
+        )
+        ax.grid(alpha=0.3)
+        plt.xticks(rotation=30)
+        plt.tight_layout()
+        st.pyplot(fig, use_container_width=True)
 
-    c1, c2 = st.columns(2)
+        # ---------------- Activity ----------------
+    st.divider()
+    st.subheader("📊 Activity Overview")
 
-    with c1:
-        busy_day = txtprocessor.week_activity_map(selected_user, df)
+    col1, col2 = st.columns([2,1])
 
-        fig, ax = plt.subplots()
-        ax.bar(busy_day.index, busy_day.values)
-        plt.xticks(rotation=45)
-        st.pyplot(fig)
+    with col1:
+            st.markdown("#### Weekly Activity")
 
-    with c2:
-        busy_month = txtprocessor.month_activity_map(selected_user, df)
+            busy_day = txtprocessor.week_activity_map(selected_user, df)
 
-        fig, ax = plt.subplots()
-        ax.bar(busy_month.index, busy_month.values)
-        plt.xticks(rotation=45)
-        st.pyplot(fig)
+            fig, ax = plt.subplots(figsize=(6,3.5))
+            ax.bar(busy_day.index, busy_day.values)
+            plt.xticks(rotation=30)
+            plt.tight_layout()
+            st.pyplot(fig, use_container_width=True)
 
+    with col2:
+            st.markdown("#### Monthly Activity")
+
+            busy_month = txtprocessor.month_activity_map(selected_user, df)
+
+            fig, ax = plt.subplots(figsize=(6,3.5))
+            ax.bar(busy_month.index, busy_month.values)
+            plt.xticks(rotation=30)
+            plt.tight_layout()
+            st.pyplot(fig, use_container_width=True)
     # ---------------- Heatmap ----------------
-    st.header("Weekly Heatmap")
+    st.divider()
+    st.subheader("🔥 Weekly Heatmap")
 
     heatmap = txtprocessor.activity_heatmap(selected_user, df)
 
-    fig, ax = plt.subplots(figsize=(10, 5))
+    fig, ax = plt.subplots(figsize=(8,4))
     sns.heatmap(heatmap, ax=ax)
-    st.pyplot(fig)
+    plt.tight_layout()
 
+    st.pyplot(fig, use_container_width=True)
     # ---------------- Busy Users ----------------
     if selected_user == "Overall":
 
@@ -138,27 +207,33 @@ if st.sidebar.button("Show Analysis", use_container_width=True):
             st.dataframe(busy_df, use_container_width=True)
 
     # ---------------- Word Cloud ----------------
-    st.header("Word Cloud")
+    st.divider()
+    st.subheader("☁ Text Analysis")
 
-    wc = txtprocessor.create_wordcloud(selected_user, df)
+    col1, col2 = st.columns(2)
 
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.imshow(wc)
-    ax.axis("off")
-    st.pyplot(fig)
+    with col1:
+        st.markdown("#### Word Cloud")
 
-    # ---------------- Common Words ----------------
-    st.header("Most Common Words")
+        wc = txtprocessor.create_wordcloud(selected_user, df)
 
-    common = txtprocessor.most_common_words(selected_user, df)
+        fig, ax = plt.subplots(figsize=(6,4))
+        ax.imshow(wc)
+        ax.axis("off")
+        st.pyplot(fig, use_container_width=True)
 
-    if common.empty:
-        st.info("No words found.")
-    else:
-        fig, ax = plt.subplots(figsize=(8, 5))
-        ax.barh(common[0], common[1])
-        plt.tight_layout()
-        st.pyplot(fig)
+    with col2:
+        st.markdown("#### Most Common Words")
+
+        common = txtprocessor.most_common_words(selected_user, df)
+
+        if not common.empty:
+            fig, ax = plt.subplots(figsize=(6,4))
+            ax.barh(common[0], common[1])
+            plt.tight_layout()
+            st.pyplot(fig, use_container_width=True)
+        else:
+            st.info("No words found.")
 
     # ---------------- Emoji Analysis ----------------
     st.header("Emoji Analysis")
@@ -182,3 +257,20 @@ if st.sidebar.button("Show Analysis", use_container_width=True):
             )
             ax.axis("equal")
             st.pyplot(fig)
+
+st.divider()
+
+st.markdown("""
+<div style="
+text-align:center;
+padding:20px;
+font-size:15px;
+color:#666;
+">
+
+Made with <b>Streamlit</b> by <b>Olivia</b><br><br>
+
+📱 WhatsApp Chat Analyzer • 2026
+
+</div>
+""", unsafe_allow_html=True)
