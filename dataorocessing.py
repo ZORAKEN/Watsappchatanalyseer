@@ -13,17 +13,12 @@ def preprocess(data):
         'message_date': dates
     })
 
-    # Convert dates
-    try:
-        df['message_date'] = pd.to_datetime(
-            df['message_date'],
-            format='%d/%m/%Y, %H:%M - '
-        )
-    except:
-        df['message_date'] = pd.to_datetime(
-            df['message_date'],
-            format='%d/%m/%Y, %I:%M %p - '
-        )
+    #Convert message_date type
+    df['message_date'] = pd.to_datetime(
+    df['message_date'].str.replace(" -", "", regex=False),
+    dayfirst=True,
+    errors="coerce"
+)
 
     df.rename(columns={'message_date': 'date'}, inplace=True)
 
