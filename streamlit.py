@@ -11,12 +11,17 @@ if uploaded_file is not None:
     bytes_data = uploaded_file.getvalue()
     data = bytes_data.decode("utf-8")
     df = preprocessor.preprocess(data)
+    if df.empty:
+        st.error("No messages found. Please upload a valid WhatsApp chat export.")
+        st.stop()
 
     # fetch unique users
-    user_list = df['user'].unique().tolist()
-    user_list.remove('group_notification')
-    user_list.sort()
-    user_list.insert(0,"Overall")
+    user_list = sorted(df['user'].dropna().unique().tolist())
+
+    if 'group_notification' in user_list:
+        user_list.remove('group_notification')
+
+    user_list.insert(0, "Overall")
 
     selected_user = st.sidebar.selectbox("Show analysis wrt",user_list)
 
@@ -44,8 +49,15 @@ if uploaded_file is not None:
         st.title("Monthly Timeline")
         timeline = helper.monthly_timeline(selected_user,df)
         fig,ax = plt.subplots()
-        ax.plot(timeline['time'], timeline['message'],color='green')
-        plt.xticks(rotation='vertical')
+        ax.plot(
+         timeline['time'],
+        timeline['message'],
+        color='green',
+        marker='o',
+        linewidth=2
+        )
+        plt.xticks(rotation=45)
+        plt.tight_layout()
         st.pyplot(fig)
 
         # daily timeline
@@ -102,6 +114,7 @@ if uploaded_file is not None:
         df_wc = helper.create_wordcloud(selected_user,df)
         fig,ax = plt.subplots()
         ax.imshow(df_wc)
+        ax.axis("off")
         st.pyplot(fig)
 
         # most common words
@@ -109,24 +122,38 @@ if uploaded_file is not None:
 
         fig,ax = plt.subplots()
 
-        ax.barh(most_common_df[0],most_common_df[1])
-        plt.xticks(rotation='vertical')
-
-        st.title('Most commmon words')
-        st.pyplot(fig)
+        if not most_common_df.empty:
+            ax.barh(most_common_df[0], most_common_df[1], color="skyblue")
+            plt.tight_layout()
+            st.title("Most Common Words")
+            st.pyplot(fig)
+        else:
+            st.info("No words found.")
+    
 
         # emoji analysis
-        emoji_df = helper.emoji_helper(selected_user,df)
+        emoji_df = helper.emoji_helper(selected_user, df)
+
         st.title("Emoji Analysis")
 
-        col1,col2 = st.columns(2)
+        if emoji_df.empty:
+            st.info("No emojis found.")
+        else:
+            col1, col2 = st.columns(2)
 
-        with col1:
-            st.dataframe(emoji_df)
-        with col2:
-            fig,ax = plt.subplots()
-            ax.pie(emoji_df[1].head(),labels=emoji_df[0].head(),autopct="%0.2f")
-            st.pyplot(fig)
+            with col1:
+                st.dataframe(emoji_df)
+
+            with col2:
+                fig, ax = plt.subplots(figsize=(6,6))
+                ax.pie(
+                    emoji_df[1].head(),
+                    labels=emoji_df[0].head(),
+                    autopct="%1.1f%%",
+                    startangle=90
+                )
+                ax.axis("equal")
+                st.pyplot(fig)
 
 
 
